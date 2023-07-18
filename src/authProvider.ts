@@ -1,5 +1,5 @@
 const authProvider = {
-    login: ({username, password}) => {
+    login: ({username, password}: {username: string, password: string}): Promise<void> => {
         const request = new Request('http://localhost:3000/api/v1/auth/login', {
             method: 'POST',
             body: JSON.stringify({email: username, password}),
@@ -19,32 +19,30 @@ const authProvider = {
                 throw new Error('Invalid username or password')
             });
     },
-    getPermissions: () => {
-        // Required for the authentication to work
+    getPermissions: (): Promise<void> => {
         return Promise.resolve();
     },
-    checkError: (error) => {
+    checkError: (error: any): Promise<void> => {
         const status = error.status;
         if (status === 401 || status === 403) {
             localStorage.removeItem('auth');
             return Promise.reject();
         }
-        // other error code (404, 500, etc): no need to log out
         return Promise.resolve();
     },
-    logout: () => {
+    logout: (): Promise<void> => {
         localStorage.removeItem('auth');
         return Promise.resolve();
     },
-    getIdentity: () => {
+    getIdentity: (): Promise<{ id: string, fullName: string }> => {
         try {
-            const auth = JSON.parse(localStorage.getItem('auth'));
+            const auth = JSON.parse(localStorage.getItem('auth')!);
             return Promise.resolve({ id: auth.data._id, fullName: auth.data.full_name });
         } catch (error) {
             return Promise.reject(error);
         }
     },
-    checkAuth: () => localStorage.getItem('auth')
+    checkAuth: (): Promise<void> => localStorage.getItem('auth')
         ? Promise.resolve()
         : Promise.reject(),
 };

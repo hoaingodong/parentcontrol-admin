@@ -1,13 +1,13 @@
-// in src/dataProvider.ts
 import { DataProvider, fetchUtils } from "react-admin";
 import { stringify } from "query-string";
 
 const apiUrl = 'http://localhost:3000/api/v1';
-const httpClient = (url, options = {}) => {
+
+const httpClient = (url: string, options: any = {}) => {
     if (!options.headers) {
         options.headers = new Headers({ Accept: 'application/json' });
     }
-    const { token } = JSON.parse(localStorage.getItem('auth'));
+    const { token }: { token: string } = JSON.parse(localStorage.getItem('auth'));
     options.headers.set('Authorization', `${token}`);
     return fetchUtils.fetchJson(url, options);
 };
@@ -15,75 +15,113 @@ const httpClient = (url, options = {}) => {
 export const dataProvider: DataProvider = {
     getList: (resource, params) => {
         const { page, perPage } = params.pagination;
-        const { field, order } = params.sort;
+        const { field} = params.sort;
         const query = {
-            sort: JSON.stringify([field, order]),
-            range: JSON.stringify([(page - 1) * perPage, page * perPage - 1]),
-            filter: JSON.stringify(params.filter),
+            sort: field,
+            limit: perPage,
+            page: page,
         };
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
 
-        return httpClient(url).then(({ headers, json }) => ({
-            data: json,
-            total: parseInt((headers.get('content-range') || "0").split('/').pop() || 0, 10),
+        return httpClient(url).then(({ headers, json }) => (
+            {
+            data: json.data,
+            total: json.total,
         }));
     },
 
     getOne: (resource, params) =>
-        httpClient(`${apiUrl}/${resource}/${params.id}`).then(({ json }) => ({
-            data: json,
-        })),
+        httpClient(`${apiUrl}/${resource}/${params.id}`)
+            .then(({ json }) => {
+                const convertObject = {...json.data}
+                convertObject['id'] = convertObject['_id']
+                delete convertObject['_id']
+                return {
+                    data: convertObject,
+                }
+            }),
 
     getMany: (resource, params) => {
-        const query = {
-            filter: JSON.stringify({ id: params.ids }),
-        };
-        const url = `${apiUrl}/${resource}?${stringify(query)}`;
-        return httpClient(url).then(({ json }) => ({ data: json }));
+        const { ids } = params;
+
+        const promises = ids.map((id) =>
+            httpClient(`${apiUrl}/${resource}/${id}`).then(({ json }) => {
+                const convertObject = {...json.data}
+                convertObject['id'] = convertObject['_id']
+                delete convertObject['_id']
+                return {
+                    data: convertObject,
+                }
+            })
+        )
+
+        return Promise.all(promises).then((responses) => (
+            {data: responses.map(response => response.data),
+        }));
     },
 
     getManyReference: (resource, params) => {
         const { page, perPage } = params.pagination;
-        const { field, order } = params.sort;
+        const { field} = params.sort;
         const query = {
-            sort: JSON.stringify([field, order]),
-            range: JSON.stringify([(page - 1) * perPage, page * perPage - 1]),
-            filter: JSON.stringify({
-                ...params.filter,
-                [params.target]: params.id,
-            }),
+            sort: field,
+            limit: perPage,
+            page: page,
         };
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
 
         return httpClient(url).then(({ headers, json }) => ({
-            data: json,
-            total: parseInt((headers.get('content-range') || "0").split('/').pop() || 0, 10),
+            data: json.data,
+            total: json.total
         }));
     },
 
     update: (resource, params) =>
         httpClient(`${apiUrl}/${resource}/${params.id}`, {
-            method: 'PUT',
+            method: 'PATCH',
             body: JSON.stringify(params.data),
-        }).then(({ json }) => ({ data: json })),
+        }).then(({ json }) => {
+            const convertObject = {...json.data}
+            convertObject['id'] = convertObject['_id']
+            delete convertObject['_id']
+            return {
+                data: convertObject,
+            };
+        }),
 
-    updateMany: (resource, params) => {
-        const query = {
-            filter: JSON.stringify({ id: params.ids}),
-        };
-        return httpClient(`${apiUrl}/${resource}?${stringify(query)}`, {
-            method: 'PUT',
-            body: JSON.stringify(params.data),
-        }).then(({ json }) => ({ data: json }));
-    },
+    create: (resource, params) => {
+        if (resource === 'meals' && params.data.photos) {
+            const fileData = new FormData();
+            fileData.append('file', params.data.photos.rawFile);
 
-    create: (resource, params) =>
-        httpClient(`${apiUrl}/${resource}`, {
+            return httpClient(`${apiUrl}/files/one`, {
+                method: 'POST',
+                body: fileData,
+            })
+                .then(({ json }) => {
+                    const imageData = {
+                        ...params.data,
+                        photos: json.url,
+                    };
+
+                    return httpClient(`${apiUrl}/${resource}`, {
+                        method: 'POST',
+                        body: JSON.stringify(imageData),
+                    })
+                        .then(({ json }) => ({
+                            data: { ...imageData, id: json.id },
+                        }));
+                });
+        }
+
+        return httpClient(`${apiUrl}/${resource}`, {
             method: 'POST',
             body: JSON.stringify(params.data),
-        }).then(({ json }) => ({
-            data: { ...params.data, id: json.id },
-        })),
+        })
+            .then(({ json }) => ({
+                data: { ...params.data, id: json.id },
+            }));
+    },
 
     delete: (resource, params) =>
         httpClient(`${apiUrl}/${resource}/${params.id}`, {
@@ -91,11 +129,11 @@ export const dataProvider: DataProvider = {
         }).then(({ json }) => ({ data: json })),
 
     deleteMany: (resource, params) => {
-        const query = {
-            filter: JSON.stringify({ id: params.ids}),
-        };
-        return httpClient(`${apiUrl}/${resource}?${stringify(query)}`, {
-            method: 'DELETE',
-        }).then(({ json }) => ({ data: json }));
-    }
+        const deleteItemPromises = params.ids.map((id) => {
+            const url = `${apiUrl}/${resource}/${id}`;
+            return httpClient(url, { method: "DELETE" }).then(({ json }) => json);
+        });
+
+        return Promise.all(deleteItemPromises).then(() => ({ data: params.ids }));
+    },
 };

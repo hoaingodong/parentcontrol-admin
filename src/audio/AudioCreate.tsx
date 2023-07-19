@@ -1,13 +1,11 @@
 import {
     BooleanInput,
     Create,
-    ImageField,
-    ImageInput,
     NumberInput,
     SelectInput,
     SimpleForm,
     TextInput,
-    ReferenceInput, required
+    ReferenceInput, required, FileInput, FileField
 } from "react-admin"
 
 const AudioEdit = () => (
@@ -18,9 +16,9 @@ const AudioEdit = () => (
             <ReferenceInput source="category" reference="music-categories">
                 <SelectInput />
             </ReferenceInput>
-            <ImageInput source="related_files" label="Related files" accept="image/*">
-                <ImageField source="src" title="title" />
-            </ImageInput>
+            <FileInput source="url" label="Related files" accept="video/mp4">
+                <FileField source="src" title="title" />
+            </FileInput>
             <NumberInput source="order"/>
             <BooleanInput source="isPremium"/>
         </SimpleForm>

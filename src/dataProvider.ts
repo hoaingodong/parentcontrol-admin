@@ -90,28 +90,106 @@ export const dataProvider: DataProvider = {
         }),
 
     create: (resource, params) => {
-        if (resource === 'meals' && params.data.photos) {
+        const uploadImageAndCreateResource = (imageData, imageValue) => {
             const fileData = new FormData();
-            fileData.append('file', params.data.photos.rawFile);
+            fileData.append('file', imageData[imageValue].rawFile);
 
             return httpClient(`${apiUrl}/files/one`, {
                 method: 'POST',
                 body: fileData,
             })
                 .then(({ json }) => {
-                    const imageData = {
-                        ...params.data,
-                        photos: json.url,
+                    const updatedImageData = {
+                        ...imageData,
+                        [imageValue]: json.url,
                     };
 
                     return httpClient(`${apiUrl}/${resource}`, {
                         method: 'POST',
-                        body: JSON.stringify(imageData),
+                        body: JSON.stringify(updatedImageData),
                     })
                         .then(({ json }) => ({
-                            data: { ...imageData, id: json.id },
+                            data: { ...updatedImageData, id: json.id },
                         }));
                 });
+        };
+
+        const uploadVideoAndCreateResource = (videoData, videoValue) => {
+            const fileData = new FormData();
+            fileData.append('file', videoData[videoValue].rawFile);
+
+            return httpClient(`${apiUrl}/files/file`, {
+                method: 'POST',
+                body: fileData,
+            })
+                .then(({ json }) => {
+                    const updatedImageData = {
+                        ...videoData,
+                        [videoValue]: json.url,
+                    };
+
+                    return httpClient(`${apiUrl}/${resource}`, {
+                        method: 'POST',
+                        body: JSON.stringify(updatedImageData),
+                    })
+                        .then(({ json }) => ({
+                            data: { ...updatedImageData, id: json.id },
+                        }));
+                });
+        };
+
+        const uploadTwoImagesAndCreateResource = (imageData, valueImage1, valueImage2) => {
+            const fileData = new FormData();
+            let updatedImageData = { ...imageData };
+
+            fileData.append('file', imageData[valueImage1].rawFile);
+            return httpClient(`${apiUrl}/files/one`, {
+                method: 'POST',
+                body: fileData,
+            })
+                .then(({ json }) => {
+                    updatedImageData = {
+                        ...updatedImageData,
+                        [valueImage1]: json.url,
+                    };
+
+                    fileData.delete('file');
+                    fileData.append('file', imageData[valueImage2].rawFile);
+                    return httpClient(`${apiUrl}/files/one`, {
+                        method: 'POST',
+                        body: fileData,
+                    });
+                })
+                .then(({ json }) => {
+                    updatedImageData = {
+                        ...updatedImageData,
+                        [valueImage2]: json.url,
+                    };
+
+                    return httpClient(`${apiUrl}/${resource}`, {
+                        method: 'POST',
+                        body: JSON.stringify(updatedImageData),
+                    });
+                })
+                .then(({ json }) => ({
+                    data: { ...updatedImageData, id: json.id },
+                }));
+        };
+
+        if (resource === 'meals' && params.data.photos) {
+            return uploadImageAndCreateResource(params.data, 'photos');
+        }
+
+        if (resource === 'music-categories' && params.data.background_url) {
+            return uploadImageAndCreateResource(params.data, 'background_url');
+        }
+
+        if (resource === 'audio' && params.data.url) {
+            return uploadVideoAndCreateResource(params.data, 'url');
+        }
+
+        if (resource === 'screens' && params.data.app_icon && params.data.app_banner) {
+            return uploadTwoImagesAndCreateResource(params.data, 'app_icon', 'app_banner');
         }
 
         return httpClient(`${apiUrl}/${resource}`, {

@@ -3,7 +3,7 @@ import {
     Edit,
     ImageField,
     ImageInput,
-    NumberInput,
+    NumberInput, ReferenceInput,
     required,
     SelectInput,
     SimpleForm,
@@ -15,10 +15,9 @@ const AudioEdit = () => (
         <SimpleForm>
             <TextInput source="title" fullWidth validate={required()}/>
             <TextInput source="description" fullWidth/>
-            <SelectInput source="category" choices={[
-                { id: 'porn_blocker', name: 'Porn Blocker' },
-                { id: 'web_blocker', name: 'Web Blocker' },
-            ]} />
+            <ReferenceInput source="category" reference="music-categories">
+                <SelectInput />
+            </ReferenceInput>
             <ImageInput source="related_files" label="Related files" accept="image/*">
                 <ImageField source="src" title="title" />
             </ImageInput>

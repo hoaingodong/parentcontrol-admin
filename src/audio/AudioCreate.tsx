@@ -16,8 +16,8 @@ const AudioEdit = () => (
             <ReferenceInput source="category" reference="music-categories">
                 <SelectInput />
             </ReferenceInput>
-            <FileInput source="url" label="Related files" accept="video/mp4">
-                <FileField source="src" title="title" />
+            <FileInput source="url" label="Related files" accept="video/mp4" >
+                <FileField source="src" title="video" />
             </FileInput>
             <NumberInput source="order"/>
             <BooleanInput source="isPremium"/>

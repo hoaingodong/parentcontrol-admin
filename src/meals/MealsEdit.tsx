@@ -12,7 +12,14 @@ const MealsEdit = () => (
                 { id: 'FREE', name: 'Free' },
                 { id: 'PREMIUM', name: 'Premium' },
             ]} />
-            <ImageInput source="photos" label="Photo" accept="image/*">
+            <ImageInput source="photos" label="Photo" accept="image/*" format={
+                v => {
+                    if ( v?.rawFile instanceof File) {
+                        return v[0]
+                    }
+                    return {src: v[0]}
+                }
+            }>
                 <ImageField source="src" title="title" />
             </ImageInput>
             <NumberInput source="order"/>

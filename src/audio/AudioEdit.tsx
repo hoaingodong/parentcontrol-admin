@@ -1,8 +1,6 @@
 import {
     BooleanInput,
-    Edit,
-    ImageField,
-    ImageInput,
+    Edit, FileField, FileInput,
     NumberInput, ReferenceInput,
     required,
     SelectInput,
@@ -18,9 +16,16 @@ const AudioEdit = () => (
             <ReferenceInput source="category" reference="music-categories">
                 <SelectInput />
             </ReferenceInput>
-            <ImageInput source="related_files" label="Related files" accept="image/*">
-                <ImageField source="src" title="title" />
-            </ImageInput>
+            <FileInput source="url" label="Related files" accept="video/mp4" format={
+                v => {
+                    if ( v?.rawFile instanceof File) {
+                        return v
+                    }
+                    return {src: v}
+                }
+            }>
+                <FileField source="src" title="title" />
+            </FileInput>
             <NumberInput source="order"/>
             <BooleanInput source="isPremium"/>
         </SimpleForm>

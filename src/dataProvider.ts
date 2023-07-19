@@ -15,12 +15,18 @@ const httpClient = (url: string, options: any = {}) => {
 export const dataProvider: DataProvider = {
     getList: (resource, params) => {
         const { page, perPage } = params.pagination;
-        const { field} = params.sort;
+        let { field, order} = params.sort;
+
+        if (order === "DESC"){
+            field = `-${field}`
+        }
+
         const query = {
             sort: field,
             limit: perPage,
             page: page,
         };
+
         const url = `${apiUrl}/${resource}?${stringify(query)}`;
 
         return httpClient(url).then(({ headers, json }) => (

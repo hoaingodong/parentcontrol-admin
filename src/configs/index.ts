@@ -1,4 +1,5 @@
-import PornsIcon from '@mui/icons-material/EventAvailable';
+import PornsIcon from '@mui/icons-material/Settings';
+
 import ConfigsList from "./ConfigsList";
 import ConfigsEdit from "./ConfigsEdit"
 import ConfigsCreate from "./ConfigsCreate";

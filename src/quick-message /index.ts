@@ -1,4 +1,4 @@
-import QuickMessagesIcon from '@mui/icons-material/EventAvailable';
+import QuickMessagesIcon from  '@mui/icons-material/Message';
 import QuickMessagesList from "./QuickMessagesList";
 import QuickMessagesCreate from "./QuickMessagesCreate"
 import QuickMessagesEdit from "./QuickMessagesEdit"

@@ -1,4 +1,5 @@
-import FaqsIcon from '@mui/icons-material/EventAvailable';
+import FaqsIcon from '@mui/icons-material/AppBlocking';
+
 import BlockersList from "./BlockersList";
 import FaqsCreate from "./BlockersCreate"
 import BlockersEdit from "./BlockersEdit"

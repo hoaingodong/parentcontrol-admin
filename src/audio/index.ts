@@ -1,4 +1,4 @@
-import AudioIcon from '@mui/icons-material/EventAvailable';
+import AudioIcon from '@mui/icons-material/AudioFile';
 import AudioList from "./AudioList";
 import AudioCreate from "./AudioCreate"
 import AudioEdit from "./AudioEdit"

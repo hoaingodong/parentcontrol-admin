@@ -1,4 +1,5 @@
-import MCategoriesIcon from '@mui/icons-material/EventAvailable';
+import MCategoriesIcon from '@mui/icons-material/LibraryMusic';
+
 import MCategoriesList from "./MCategoriesList";
 import MCategoriesCreate from "./MCategoriesCreate"
 import MCategoriesEdit from "./MCategoriesEdit"

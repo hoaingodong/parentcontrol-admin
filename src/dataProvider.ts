@@ -209,8 +209,14 @@ export const dataProvider: DataProvider = {
             return uploadVideoAndCreateResource(params.data, 'url');
         }
 
-        if (resource === 'screens' && params.data.app_icon && params.data.app_banner) {
-            return uploadTwoImagesAndCreateResource(params.data, 'app_icon', 'app_banner');
+        if (resource === 'screens') {
+            if (params.data.app_icon) {
+                return uploadImageAndCreateResource(params.data, 'app_icon')
+            } else if (params.data.app_banner) {
+                return uploadImageAndCreateResource(params.data, 'app_banner')
+            } else {
+                return uploadTwoImagesAndCreateResource(params.data, 'app_icon', 'app_banner')
+            }
         }
 
         return httpClient(`${apiUrl}/${resource}`, {
@@ -336,15 +342,24 @@ export const dataProvider: DataProvider = {
         const uploadMultipleImagesAndUpdateResources = (imageData, imageValues) => {
 
             const newPictures = imageData[imageValues].filter(
-                p => p.rawFile instanceof File
+                p => p?.rawFile instanceof File
             );
-            const formerPictures = imageData[imageValues].filter(
-                p => !(p.rawFile instanceof File)
+            let formerPictures = imageData[imageValues].filter(
+                p => !(p?.rawFile instanceof File)
             );
+
+            // cause images data sent is changeable, if we don't change images, the formerPictures is array contain string (each photo)
+            // if we add more images, remove images, the imageData is array contain object (has field src contain link of each photo
+
+            let arrayOfStrings = formerPictures
+
+            if (typeof formerPictures[0] === "object") {
+                arrayOfStrings = formerPictures.map((obj) => obj.src)
+            }
 
             const uploadPromises = newPictures.map((imageValue) => {
                 const fileData = new FormData();
-                fileData.append('file', imageValue.rawFile);
+                fileData.append('file', imageValue?.rawFile);
 
                 return httpClient(`${apiUrl}/files/one`, {
                     method: 'POST',
@@ -357,7 +372,7 @@ export const dataProvider: DataProvider = {
                     ...imageData,
                     [imageValues]: [
                         ...urls,
-                        ...formerPictures,
+                        ...arrayOfStrings,
                     ],
                 };
 
@@ -383,8 +398,14 @@ export const dataProvider: DataProvider = {
             return uploadVideoAndUpdateResource(params.data, 'url');
         }
 
-        if (resource === 'screens' && params.data.app_icon && params.data.app_banner) {
-            return uploadTwoImagesAndUpdateResource(params.data, 'app_icon', 'app_banner');
+        if (resource === 'screens') {
+            if (params.data.app_icon) {
+                return uploadImageAndUpdateResource(params.data, 'app_icon')
+            } else if (params.data.app_banner) {
+                return uploadImageAndUpdateResource(params.data, 'app_banner')
+            } else {
+                return uploadTwoImagesAndUpdateResource(params.data, 'app_icon', 'app_banner')
+            }
         }
 
         return httpClient(`${apiUrl}/${resource}/${params.id}`, {

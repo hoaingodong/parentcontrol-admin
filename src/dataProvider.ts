@@ -170,8 +170,35 @@ export const dataProvider: DataProvider = {
                 }));
         };
 
+        const uploadMultipleImagesAndCreateResources = (imageData, imageValues) => {
+            const uploadPromises = imageData[imageValues].map((imageValue) => {
+                const fileData = new FormData();
+                fileData.append('file', imageValue.rawFile);
+
+                return httpClient(`${apiUrl}/files/one`, {
+                    method: 'POST',
+                    body: fileData,
+                }).then(({json}) => json.url);
+            });
+
+            return Promise.all(uploadPromises).then((urls) => {
+                const updatedImageData = {
+                    ...imageData,
+                    [imageValues]: urls,
+                };
+
+                return httpClient(`${apiUrl}/${resource}`, {
+                    method: 'POST',
+                    body: JSON.stringify(updatedImageData),
+                })
+                    .then(({json}) => ({
+                        data: {...updatedImageData, id: json.id},
+                    }));
+            });
+        };
+
         if (resource === 'meals' && params.data.photos) {
-            return uploadImageAndCreateResource(params.data, 'photos');
+            return uploadMultipleImagesAndCreateResources(params.data, 'photos');
         }
 
         if (resource === 'music-categories' && params.data.background_url) {
@@ -305,6 +332,48 @@ export const dataProvider: DataProvider = {
                         }));
                 })
         };
+
+        const uploadMultipleImagesAndUpdateResources = (imageData, imageValues) => {
+
+            const newPictures = imageData[imageValues].filter(
+                p => p.rawFile instanceof File
+            );
+            const formerPictures = imageData[imageValues].filter(
+                p => !(p.rawFile instanceof File)
+            );
+
+            const uploadPromises = newPictures.map((imageValue) => {
+                const fileData = new FormData();
+                fileData.append('file', imageValue.rawFile);
+
+                return httpClient(`${apiUrl}/files/one`, {
+                    method: 'POST',
+                    body: fileData,
+                }).then(({json}) => json.url);
+            });
+
+            return Promise.all(uploadPromises).then((urls) => {
+                const updatedImageData = {
+                    ...imageData,
+                    [imageValues]: [
+                        ...urls,
+                        ...formerPictures,
+                    ],
+                };
+
+                return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(updatedImageData),
+                })
+                    .then(() => ({
+                        data: updatedImageData,
+                    }));
+            });
+        };
+
+        if (resource === 'meals' && params.data.photos) {
+            return uploadMultipleImagesAndUpdateResources(params.data, 'photos');
+        }
 
         if (resource === 'music-categories' && params.data.background_url) {
             return uploadImageAndUpdateResource(params.data, 'background_url');

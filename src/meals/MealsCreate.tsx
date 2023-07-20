@@ -12,10 +12,10 @@ const MealsCreate = () => (
                     { id: 'FREE', name: 'Free' },
                     { id: 'PREMIUM', name: 'Premium' },
                 ]} />
-                <ImageInput source="photos" label="Photo" accept="image/*">
+                <ImageInput source="photos" label="Photo" accept="image/*" multiple={true}>
                     <ImageField source="src" title="title" />
                 </ImageInput>
-                <NumberInput source="order" />
+            <NumberInput source="order" />
             </SimpleForm>
         </Create>
     )

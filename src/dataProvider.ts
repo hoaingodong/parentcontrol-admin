@@ -82,19 +82,6 @@ export const dataProvider: DataProvider = {
         }));
     },
 
-    update: (resource, params) =>
-        httpClient(`${apiUrl}/${resource}/${params.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify(params.data),
-        }).then(({ json }) => {
-            const convertObject = {...json.data}
-            convertObject['id'] = convertObject['_id']
-            delete convertObject['_id']
-            return {
-                data: convertObject,
-            };
-        }),
-
     create: (resource, params) => {
         const uploadImageAndCreateResource = (imageData, imageValue) => {
             const fileData = new FormData();
@@ -205,6 +192,112 @@ export const dataProvider: DataProvider = {
             .then(({ json }) => ({
                 data: { ...params.data, id: json.id },
             }));
+    },
+
+    update: (resource, params) => {
+        const uploadImageAndUpdateResource = (imageData, imageValue) => {
+            const fileData = new FormData();
+            fileData.append('file', imageData[imageValue].rawFile);
+
+            return httpClient(`${apiUrl}/files/one`, {
+                method: 'POST',
+                body: fileData,
+            }).then(({ json }) => {
+                const updatedData = {
+                    ...imageData,
+                    [imageValue]: json.url,
+                };
+
+                return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ [imageValue]: json.url }),
+                }).then(() => ({
+                    data: updatedData,
+                }));
+            });
+        };
+
+        // const uploadTwoImagesAndUpdateResource = (imageData, valueImage1, valueImage2) => {
+        //     const fileData1 = new FormData();
+        //     const fileData2 = new FormData();
+        //
+        //     fileData1.append('file', imageData[valueImage1].rawFile);
+        //     fileData2.append('file', imageData[valueImage2].rawFile);
+        //
+        //     return Promise.all([
+        //         httpClient(`${apiUrl}/files/one`, { method: 'POST', body: fileData1 }),
+        //         httpClient(`${apiUrl}/files/one`, { method: 'POST', body: fileData2 }),
+        //     ]).then(([{ json: json1 }, { json: json2 }]) => {
+        //         const updatedData = {
+        //             ...imageData,
+        //             [valueImage1]: json1.url,
+        //             [valueImage2]: json2.url,
+        //         };
+        //
+        //         return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+        //             method: 'PATCH',
+        //             body: JSON.stringify({
+        //                 [`${valueImage1}_id`]: json1.id,
+        //                 [`${valueImage2}_id`]: json2.id,
+        //             }),
+        //         }).then(() => ({
+        //             data: updatedData,
+        //         }));
+        //     });
+        // };
+        //
+        // // Helper function to upload video and update resource
+        // const uploadVideoAndUpdateResource = (videoData, videoValue) => {
+        //     const fileData = new FormData();
+        //     fileData.append('file', videoData[videoValue].rawFile);
+        //
+        //     return httpClient(`${apiUrl}/files/file`, {
+        //         method: 'POST',
+        //         body: fileData,
+        //     }).then(({ json }) => {
+        //         const updatedData = {
+        //             ...videoData,
+        //             [videoValue]: json.url,
+        //         };
+        //
+        //         return httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
+        //             method: 'PATCH',
+        //             body: JSON.stringify({ [`${videoValue}_id`]: json.id }),
+        //         }).then(() => ({
+        //             data: updatedData,
+        //         }));
+        //     });
+        // };
+
+        // Check resource and data for file uploads and perform update
+        // if (resource === 'meals' && params.data.photos) {
+        //     return uploadImageAndUpdateResource(params.data, 'photos');
+        // }
+
+        if (resource === 'music-categories' && params.data.background_url) {
+            return uploadImageAndUpdateResource(params.data, 'background_url');
+        }
+
+        // if (resource === 'audio' && params.data.url) {
+        //     return uploadVideoAndUpdateResource(params.data, 'url');
+        // }
+        //
+        // if (resource === 'screens' && params.data.app_icon && params.data.app_banner) {
+        //     return uploadTwoImagesAndUpdateResource(params.data, 'app_icon', 'app_banner');
+        // }
+
+        // If there are no file uploads, perform a regular update operation
+        return httpClient(`${apiUrl}/${resource}/${params.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(params.data),
+        }).then(({ json }) => {
+            const convertObject = { ...json.data };
+            convertObject['id'] = convertObject['_id'];
+            delete convertObject['_id'];
+            return {
+                data: convertObject,
+            };
+        });
     },
 
     delete: (resource, params) =>

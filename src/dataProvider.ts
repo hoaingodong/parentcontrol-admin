@@ -1,9 +1,10 @@
 import {DataProvider, fetchUtils} from "react-admin";
 import {stringify} from "query-string";
+import {upload} from "./helpers/helper"
 
 const apiUrl = 'http://localhost:3000/api/v1';
 
-const httpClient = (url: string, options: any = {}) => {
+export const httpClient = (url: string, options: any = {}) => {
     if (!options.headers) {
         options.headers = new Headers({Accept: 'application/json'});
     }
@@ -84,18 +85,8 @@ export const dataProvider: DataProvider = {
     },
 
     create: (resource, params) => {
-        const uploadImageAndCreateResource = async (imageData, imageValue) => {
-            const fileData = new FormData();
-            fileData.append('file', imageData[imageValue].rawFile);
-
-            const {json} = await httpClient(`${apiUrl}/files/one`, {
-                method: 'POST',
-                body: fileData,
-            });
-            const updatedImageData = {
-                ...imageData,
-                [imageValue]: json.url,
-            };
+        const uploadAndCreateResource = async (data, value, type) => {
+            const updatedImageData = await upload(data, value, type)
             const {json: json_1} = await httpClient(`${apiUrl}/${resource}`, {
                 method: 'POST',
                 body: JSON.stringify(updatedImageData),
@@ -105,53 +96,13 @@ export const dataProvider: DataProvider = {
             });
         };
 
-        const uploadVideoAndCreateResource = async (videoData, videoValue) => {
-            const fileData = new FormData();
-            fileData.append('file', videoData[videoValue].rawFile);
+        const uploadTwoImagesAndCreateResource = async (imageData, valueImage1, valueImage2, type) => {
+            const updatedImageData = await upload(imageData, valueImage1, type)
+            const updatedImageData2 = await upload(updatedImageData, valueImage2, type)
 
-            const {json} = await httpClient(`${apiUrl}/files/file`, {
-                method: 'POST',
-                body: fileData,
-            });
-            const updatedImageData = {
-                ...videoData,
-                [videoValue]: json.url,
-            };
-            const {json: json_1} = await httpClient(`${apiUrl}/${resource}`, {
-                method: 'POST',
-                body: JSON.stringify(updatedImageData),
-            });
-            return ({
-                data: {...updatedImageData, id: json_1.id},
-            });
-        };
-
-        const uploadTwoImagesAndCreateResource = async (imageData, valueImage1, valueImage2) => {
-            const fileData = new FormData();
-            let updatedImageData = {...imageData};
-
-            fileData.append('file', imageData[valueImage1].rawFile);
-            const {json} = await httpClient(`${apiUrl}/files/one`, {
-                method: 'POST',
-                body: fileData,
-            });
-            updatedImageData = {
-                ...updatedImageData,
-                [valueImage1]: json.url,
-            };
-            fileData.delete('file');
-            fileData.append('file', imageData[valueImage2].rawFile);
-            const {json: json_1} = await httpClient(`${apiUrl}/files/one`, {
-                method: 'POST',
-                body: fileData,
-            });
-            updatedImageData = {
-                ...updatedImageData,
-                [valueImage2]: json_1.url,
-            };
             const {json: json_2} = await httpClient(`${apiUrl}/${resource}`, {
                 method: 'POST',
-                body: JSON.stringify(updatedImageData),
+                body: JSON.stringify(updatedImageData2),
             });
             return ({
                 data: {...updatedImageData, id: json_2.id},
@@ -188,20 +139,20 @@ export const dataProvider: DataProvider = {
         }
 
         if (resource === 'music-categories' && params.data.background_url) {
-            return uploadImageAndCreateResource(params.data, 'background_url');
+            return uploadAndCreateResource(params.data, 'background_url', 'image');
         }
 
         if (resource === 'audio' && params.data.url) {
-            return uploadVideoAndCreateResource(params.data, 'url');
+            return uploadAndCreateResource(params.data, 'url','audio');
         }
 
         if (resource === 'screens') {
-            if (params.data.app_icon) {
-                return uploadImageAndCreateResource(params.data, 'app_icon')
-            } else if (params.data.app_banner) {
-                return uploadImageAndCreateResource(params.data, 'app_banner')
+            if (!params.data.app_banner) {
+                return uploadAndCreateResource(params.data, 'app_icon', 'image')
+            } else if (!params.data.app_icon) {
+                return uploadAndCreateResource(params.data, 'app_banner', 'image')
             } else {
-                return uploadTwoImagesAndCreateResource(params.data, 'app_icon', 'app_banner')
+                return uploadTwoImagesAndCreateResource(params.data, 'app_icon', 'app_banner', 'image')
             }
         }
 
@@ -215,21 +166,10 @@ export const dataProvider: DataProvider = {
     },
 
     update: (resource, params) => {
-        const uploadImageAndUpdateResource = async (imageData, imageValue) => {
-            if (imageData[imageValue]?.rawFile) {
-                // If the file exists, proceed with image upload and resource update
-                const fileData = new FormData();
-                fileData.append('file', imageData[imageValue].rawFile);
-
-                const {json} = await httpClient(`${apiUrl}/files/one`, {
-                    method: 'POST',
-                    body: fileData,
-                });
-                const updatedData = {
-                    ...imageData,
-                    [imageValue]: json.url,
-                };
-                await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+        const uploadAndUpdateResource = async (data, value, type) => {
+            if (data[value]?.rawFile) {
+                const updatedData = await upload(data, value, type)
+                await httpClient(`${apiUrl}/${resource}/${data.id}`, {
                     method: 'PATCH',
                     body: JSON.stringify(updatedData),
                 });
@@ -237,76 +177,22 @@ export const dataProvider: DataProvider = {
                     data: updatedData,
                 });
             } else {
-                // If the file doesn't exist, return the original imageData without any modifications
-                await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                await httpClient(`${apiUrl}/${resource}/${data.id}`, {
                     method: 'PATCH',
-                    body: JSON.stringify(imageData),
+                    body: JSON.stringify(data),
                 });
                 return ({
-                    data: imageData,
+                    data: data,
                 });
             }
         };
 
-        const uploadVideoAndUpdateResource = async (videoData, videoValue) => {
-            if (videoData[videoValue]?.rawFile) {
-                // If the file exists, proceed with image upload and resource update
-                const fileData = new FormData();
-                fileData.append('file', videoData[videoValue].rawFile);
-
-                const {json} = await httpClient(`${apiUrl}/files/file`, {
-                    method: 'POST',
-                    body: fileData,
-                });
-                const updatedData = {
-                    ...videoData,
-                    [videoValue]: json.url,
-                };
-                await httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify(updatedData),
-                });
-                return ({
-                    data: updatedData,
-                });
-            } else {
-                // If the file doesn't exist, return the original imageData without any modifications
-                await httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify(videoData),
-                });
-                return ({
-                    data: videoData,
-                });
-            }
-        };
-
-        const uploadTwoImagesAndUpdateResource = async (imageData, valueImage1, valueImage2) => {
-            const fileData = new FormData();
-            let updatedImageData = {...imageData};
-
-            fileData.append('file', imageData[valueImage1].rawFile);
-            const {json} = await httpClient(`${apiUrl}/files/one`, {
-                method: 'POST',
-                body: fileData,
-            });
-            updatedImageData = {
-                ...updatedImageData,
-                [valueImage1]: json.url,
-            };
-            fileData.delete('file');
-            fileData.append('file', imageData[valueImage2].rawFile);
-            const {json: json_1} = await httpClient(`${apiUrl}/files/one`, {
-                method: 'POST',
-                body: fileData,
-            });
-            updatedImageData = {
-                ...updatedImageData,
-                [valueImage2]: json_1.url,
-            };
+        const uploadTwoImagesAndUpdateResource = async (imageData, valueImage1, valueImage2, type) => {
+            const updatedImageData = await upload(imageData, valueImage1, type)
+            const updatedImageData2 = await upload(updatedImageData, valueImage2, type)
             await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
                 method: 'PATCH',
-                body: JSON.stringify(updatedImageData),
+                body: JSON.stringify(updatedImageData2),
             });
             return ({
                 data: updatedImageData,
@@ -363,20 +249,20 @@ export const dataProvider: DataProvider = {
         }
 
         if (resource === 'music-categories' && params.data.background_url) {
-            return uploadImageAndUpdateResource(params.data, 'background_url');
+            return uploadAndUpdateResource(params.data, 'background_url', 'image');
         }
 
         if (resource === 'audio' && params.data.url) {
-            return uploadVideoAndUpdateResource(params.data, 'url');
+            return uploadAndUpdateResource(params.data, 'url', 'audio');
         }
 
         if (resource === 'screens') {
-            if (params.data.app_icon) {
-                return uploadImageAndUpdateResource(params.data, 'app_icon')
-            } else if (params.data.app_banner) {
-                return uploadImageAndUpdateResource(params.data, 'app_banner')
+            if (!params.data.app_banner) {
+                return uploadAndUpdateResource(params.data, 'app_icon', 'image')
+            } else if (!params.data.app_icon) {
+                return uploadAndUpdateResource(params.data, 'app_banner', 'image')
             } else {
-                return uploadTwoImagesAndUpdateResource(params.data, 'app_icon', 'app_banner')
+                return uploadTwoImagesAndUpdateResource(params.data, 'app_icon', 'app_banner', 'image')
             }
         }
 

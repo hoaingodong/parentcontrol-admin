@@ -84,93 +84,81 @@ export const dataProvider: DataProvider = {
     },
 
     create: (resource, params) => {
-        const uploadImageAndCreateResource = (imageData, imageValue) => {
+        const uploadImageAndCreateResource = async (imageData, imageValue) => {
             const fileData = new FormData();
             fileData.append('file', imageData[imageValue].rawFile);
 
-            return httpClient(`${apiUrl}/files/one`, {
+            const {json} = await httpClient(`${apiUrl}/files/one`, {
                 method: 'POST',
                 body: fileData,
-            })
-                .then(({json}) => {
-                    const updatedImageData = {
-                        ...imageData,
-                        [imageValue]: json.url,
-                    };
-
-                    return httpClient(`${apiUrl}/${resource}`, {
-                        method: 'POST',
-                        body: JSON.stringify(updatedImageData),
-                    })
-                        .then(({json}) => ({
-                            data: {...updatedImageData, id: json.id},
-                        }));
-                });
+            });
+            const updatedImageData = {
+                ...imageData,
+                [imageValue]: json.url,
+            };
+            const {json: json_1} = await httpClient(`${apiUrl}/${resource}`, {
+                method: 'POST',
+                body: JSON.stringify(updatedImageData),
+            });
+            return ({
+                data: {...updatedImageData, id: json_1.id},
+            });
         };
 
-        const uploadVideoAndCreateResource = (videoData, videoValue) => {
+        const uploadVideoAndCreateResource = async (videoData, videoValue) => {
             const fileData = new FormData();
             fileData.append('file', videoData[videoValue].rawFile);
 
-            return httpClient(`${apiUrl}/files/file`, {
+            const {json} = await httpClient(`${apiUrl}/files/file`, {
                 method: 'POST',
                 body: fileData,
-            })
-                .then(({json}) => {
-                    const updatedImageData = {
-                        ...videoData,
-                        [videoValue]: json.url,
-                    };
-
-                    return httpClient(`${apiUrl}/${resource}`, {
-                        method: 'POST',
-                        body: JSON.stringify(updatedImageData),
-                    })
-                        .then(({json}) => ({
-                            data: {...updatedImageData, id: json.id},
-                        }));
-                });
+            });
+            const updatedImageData = {
+                ...videoData,
+                [videoValue]: json.url,
+            };
+            const {json: json_1} = await httpClient(`${apiUrl}/${resource}`, {
+                method: 'POST',
+                body: JSON.stringify(updatedImageData),
+            });
+            return ({
+                data: {...updatedImageData, id: json_1.id},
+            });
         };
 
-        const uploadTwoImagesAndCreateResource = (imageData, valueImage1, valueImage2) => {
+        const uploadTwoImagesAndCreateResource = async (imageData, valueImage1, valueImage2) => {
             const fileData = new FormData();
             let updatedImageData = {...imageData};
 
             fileData.append('file', imageData[valueImage1].rawFile);
-            return httpClient(`${apiUrl}/files/one`, {
+            const {json} = await httpClient(`${apiUrl}/files/one`, {
                 method: 'POST',
                 body: fileData,
-            })
-                .then(({json}) => {
-                    updatedImageData = {
-                        ...updatedImageData,
-                        [valueImage1]: json.url,
-                    };
-
-                    fileData.delete('file');
-                    fileData.append('file', imageData[valueImage2].rawFile);
-                    return httpClient(`${apiUrl}/files/one`, {
-                        method: 'POST',
-                        body: fileData,
-                    });
-                })
-                .then(({json}) => {
-                    updatedImageData = {
-                        ...updatedImageData,
-                        [valueImage2]: json.url,
-                    };
-
-                    return httpClient(`${apiUrl}/${resource}`, {
-                        method: 'POST',
-                        body: JSON.stringify(updatedImageData),
-                    });
-                })
-                .then(({json}) => ({
-                    data: {...updatedImageData, id: json.id},
-                }));
+            });
+            updatedImageData = {
+                ...updatedImageData,
+                [valueImage1]: json.url,
+            };
+            fileData.delete('file');
+            fileData.append('file', imageData[valueImage2].rawFile);
+            const {json: json_1} = await httpClient(`${apiUrl}/files/one`, {
+                method: 'POST',
+                body: fileData,
+            });
+            updatedImageData = {
+                ...updatedImageData,
+                [valueImage2]: json_1.url,
+            };
+            const {json: json_2} = await httpClient(`${apiUrl}/${resource}`, {
+                method: 'POST',
+                body: JSON.stringify(updatedImageData),
+            });
+            return ({
+                data: {...updatedImageData, id: json_2.id},
+            });
         };
 
-        const uploadMultipleImagesAndCreateResources = (imageData, imageValues) => {
+        const uploadMultipleImagesAndCreateResources = async (imageData, imageValues) => {
             const uploadPromises = imageData[imageValues].map((imageValue) => {
                 const fileData = new FormData();
                 fileData.append('file', imageValue.rawFile);
@@ -181,19 +169,17 @@ export const dataProvider: DataProvider = {
                 }).then(({json}) => json.url);
             });
 
-            return Promise.all(uploadPromises).then((urls) => {
-                const updatedImageData = {
-                    ...imageData,
-                    [imageValues]: urls,
-                };
-
-                return httpClient(`${apiUrl}/${resource}`, {
-                    method: 'POST',
-                    body: JSON.stringify(updatedImageData),
-                })
-                    .then(({json}) => ({
-                        data: {...updatedImageData, id: json.id},
-                    }));
+            const urls = await Promise.all(uploadPromises);
+            const updatedImageData = {
+                ...imageData,
+                [imageValues]: urls,
+            };
+            const {json: json_1} = await httpClient(`${apiUrl}/${resource}`, {
+                method: 'POST',
+                body: JSON.stringify(updatedImageData),
+            });
+            return ({
+                data: {...updatedImageData, id: json_1.id},
             });
         };
 
@@ -229,117 +215,105 @@ export const dataProvider: DataProvider = {
     },
 
     update: (resource, params) => {
-        const uploadImageAndUpdateResource = (imageData, imageValue) => {
+        const uploadImageAndUpdateResource = async (imageData, imageValue) => {
             if (imageData[imageValue]?.rawFile) {
                 // If the file exists, proceed with image upload and resource update
                 const fileData = new FormData();
                 fileData.append('file', imageData[imageValue].rawFile);
 
-                return httpClient(`${apiUrl}/files/one`, {
+                const {json} = await httpClient(`${apiUrl}/files/one`, {
                     method: 'POST',
                     body: fileData,
-                })
-                    .then(({json}) => {
-                        const updatedData = {
-                            ...imageData,
-                            [imageValue]: json.url,
-                        };
-
-                        return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify(updatedData),
-                        })
-                            .then(() => ({
-                                data: updatedData,
-                            }));
-                    });
+                });
+                const updatedData = {
+                    ...imageData,
+                    [imageValue]: json.url,
+                };
+                await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(updatedData),
+                });
+                return ({
+                    data: updatedData,
+                });
             } else {
                 // If the file doesn't exist, return the original imageData without any modifications
-                return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
                     method: 'PATCH',
                     body: JSON.stringify(imageData),
-                })
-                    .then(() => ({
-                        data: imageData,
-                    }));
+                });
+                return ({
+                    data: imageData,
+                });
             }
         };
 
-        const uploadVideoAndUpdateResource = (videoData, videoValue) => {
+        const uploadVideoAndUpdateResource = async (videoData, videoValue) => {
             if (videoData[videoValue]?.rawFile) {
                 // If the file exists, proceed with image upload and resource update
                 const fileData = new FormData();
                 fileData.append('file', videoData[videoValue].rawFile);
 
-                return httpClient(`${apiUrl}/files/file`, {
+                const {json} = await httpClient(`${apiUrl}/files/file`, {
                     method: 'POST',
                     body: fileData,
-                })
-                    .then(({json}) => {
-                        const updatedData = {
-                            ...videoData,
-                            [videoValue]: json.url,
-                        };
-
-                        return httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify(updatedData),
-                        })
-                            .then(() => ({
-                                data: updatedData,
-                            }));
-                    });
+                });
+                const updatedData = {
+                    ...videoData,
+                    [videoValue]: json.url,
+                };
+                await httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify(updatedData),
+                });
+                return ({
+                    data: updatedData,
+                });
             } else {
                 // If the file doesn't exist, return the original imageData without any modifications
-                return httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
+                await httpClient(`${apiUrl}/${resource}/${videoData.id}`, {
                     method: 'PATCH',
                     body: JSON.stringify(videoData),
-                })
-                    .then(() => ({
-                        data: videoData,
-                    }));
+                });
+                return ({
+                    data: videoData,
+                });
             }
         };
 
-        const uploadTwoImagesAndUpdateResource = (imageData, valueImage1, valueImage2) => {
+        const uploadTwoImagesAndUpdateResource = async (imageData, valueImage1, valueImage2) => {
             const fileData = new FormData();
             let updatedImageData = {...imageData};
 
             fileData.append('file', imageData[valueImage1].rawFile);
-            return httpClient(`${apiUrl}/files/one`, {
+            const {json} = await httpClient(`${apiUrl}/files/one`, {
                 method: 'POST',
                 body: fileData,
-            })
-                .then(({json}) => {
-                    updatedImageData = {
-                        ...updatedImageData,
-                        [valueImage1]: json.url,
-                    };
-
-                    fileData.delete('file');
-                    fileData.append('file', imageData[valueImage2].rawFile);
-                    return httpClient(`${apiUrl}/files/one`, {
-                        method: 'POST',
-                        body: fileData,
-                    });
-                })
-                .then(({json}) => {
-                    updatedImageData = {
-                        ...updatedImageData,
-                        [valueImage2]: json.url,
-                    };
-
-                    return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
-                        method: 'PATCH',
-                        body: JSON.stringify(updatedImageData),
-                    })
-                        .then(() => ({
-                            data: updatedImageData,
-                        }));
-                })
+            });
+            updatedImageData = {
+                ...updatedImageData,
+                [valueImage1]: json.url,
+            };
+            fileData.delete('file');
+            fileData.append('file', imageData[valueImage2].rawFile);
+            const {json: json_1} = await httpClient(`${apiUrl}/files/one`, {
+                method: 'POST',
+                body: fileData,
+            });
+            updatedImageData = {
+                ...updatedImageData,
+                [valueImage2]: json_1.url,
+            };
+            await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updatedImageData),
+            });
+            return ({
+                data: updatedImageData,
+            });
         };
 
-        const uploadMultipleImagesAndUpdateResources = (imageData, imageValues) => {
+        const uploadMultipleImagesAndUpdateResources = async (imageData, imageValues) => {
 
             const newPictures = imageData[imageValues].filter(
                 p => p?.rawFile instanceof File
@@ -367,22 +341,20 @@ export const dataProvider: DataProvider = {
                 }).then(({json}) => json.url);
             });
 
-            return Promise.all(uploadPromises).then((urls) => {
-                const updatedImageData = {
-                    ...imageData,
-                    [imageValues]: [
-                        ...urls,
-                        ...arrayOfStrings,
-                    ],
-                };
-
-                return httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify(updatedImageData),
-                })
-                    .then(() => ({
-                        data: updatedImageData,
-                    }));
+            const urls = await Promise.all(uploadPromises);
+            const updatedImageData = {
+                ...imageData,
+                [imageValues]: [
+                    ...urls,
+                    ...arrayOfStrings,
+                ],
+            };
+            await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify(updatedImageData),
+            });
+            return ({
+                data: updatedImageData,
             });
         };
 

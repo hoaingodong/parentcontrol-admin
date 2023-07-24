@@ -10,9 +10,14 @@ import blockers from "./blockers"
 import mcategories from "./mcategories"
 import meals from "./meals"
 import audio from "./audio"
+import { defaultTheme } from 'react-admin';
+const lightTheme = defaultTheme;
+const darkTheme = { ...defaultTheme, palette: { mode: 'dark' } };
+
 
 export const App = () => (
-    <Admin dataProvider={dataProvider} authProvider={authProvider}>
+    <Admin dataProvider={dataProvider} authProvider={authProvider} theme={lightTheme}
+           darkTheme={darkTheme}>
             <Resource name="quick-messages" {...quickMessages}/>
             <Resource name="porns" {...porns}/>
             <Resource name="configs" {...configs}/>

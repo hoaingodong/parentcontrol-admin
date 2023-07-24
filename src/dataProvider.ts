@@ -109,22 +109,8 @@ export const dataProvider: DataProvider = {
             });
         };
 
-        const uploadMultipleImagesAndCreateResources = async (imageData, imageValues) => {
-            const uploadPromises = imageData[imageValues].map((imageValue) => {
-                const fileData = new FormData();
-                fileData.append('file', imageValue.rawFile);
-
-                return httpClient(`${apiUrl}/files/one`, {
-                    method: 'POST',
-                    body: fileData,
-                }).then(({json}) => json.url);
-            });
-
-            const urls = await Promise.all(uploadPromises);
-            const updatedImageData = {
-                ...imageData,
-                [imageValues]: urls,
-            };
+        const uploadMultipleImagesAndCreateResources = async (imageData, imageValues, type) => {
+            const updatedImageData = await upload(imageData, imageValues, type)
             const {json: json_1} = await httpClient(`${apiUrl}/${resource}`, {
                 method: 'POST',
                 body: JSON.stringify(updatedImageData),
@@ -135,7 +121,7 @@ export const dataProvider: DataProvider = {
         };
 
         if (resource === 'meals' && params.data.photos) {
-            return uploadMultipleImagesAndCreateResources(params.data, 'photos');
+            return uploadMultipleImagesAndCreateResources(params.data, 'photos', 'image');
         }
 
         if (resource === 'music-categories' && params.data.background_url) {

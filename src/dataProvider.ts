@@ -1,6 +1,6 @@
 import {DataProvider, fetchUtils} from "react-admin";
 import {stringify} from "query-string";
-import {upload} from "./helpers/helper"
+import {upload} from "./helpers/uploadFile"
 
 const apiUrl = 'http://localhost:3000/api/v1';
 
@@ -185,8 +185,7 @@ export const dataProvider: DataProvider = {
             });
         };
 
-        const uploadMultipleImagesAndUpdateResources = async (imageData, imageValues) => {
-
+        const uploadMultipleImagesAndUpdateResources = async (imageData, imageValues, type) => {
             const newPictures = imageData[imageValues].filter(
                 p => p?.rawFile instanceof File
             );
@@ -194,26 +193,23 @@ export const dataProvider: DataProvider = {
                 p => !(p?.rawFile instanceof File)
             );
 
+            let arrayOfStrings = formerPictures;
+
+            if (typeof formerPictures[0] === "object") {
+                arrayOfStrings = formerPictures.map((obj) => obj.src);
+            }
+
             // cause images data sent is changeable, if we don't change images, the formerPictures is array contain string (each photo)
             // if we add more images, remove images, the imageData is array contain object (has field src contain link of each photo
 
-            let arrayOfStrings = formerPictures
-
-            if (typeof formerPictures[0] === "object") {
-                arrayOfStrings = formerPictures.map((obj) => obj.src)
-            }
-
             const uploadPromises = newPictures.map((imageValue) => {
-                const fileData = new FormData();
-                fileData.append('file', imageValue?.rawFile);
-
-                return httpClient(`${apiUrl}/files/one`, {
-                    method: 'POST',
-                    body: fileData,
-                }).then(({json}) => json.url);
+                return upload({ [imageValues]: imageValue }, imageValues, type);
             });
 
-            const urls = await Promise.all(uploadPromises);
+            const uploadedImages = await Promise.all(uploadPromises);
+
+            const urls = uploadedImages.map((uploadedImage) => uploadedImage[imageValues]);
+
             const updatedImageData = {
                 ...imageData,
                 [imageValues]: [
@@ -221,17 +217,20 @@ export const dataProvider: DataProvider = {
                     ...arrayOfStrings,
                 ],
             };
+
             await httpClient(`${apiUrl}/${resource}/${imageData.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify(updatedImageData),
             });
-            return ({
+
+            return {
                 data: updatedImageData,
-            });
+            };
         };
 
+
         if (resource === 'meals' && params.data.photos) {
-            return uploadMultipleImagesAndUpdateResources(params.data, 'photos');
+            return uploadMultipleImagesAndUpdateResources(params.data, 'photos', 'image');
         }
 
         if (resource === 'music-categories' && params.data.background_url) {
